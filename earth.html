@@ -1,186 +1,46 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>实时活动地球 - Real-time Activity Earth</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实时活动地球 - Real-time Activity Earth (Optimized)</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            overflow: hidden;
-            background: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        .ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        
-        .header {
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            color: #fff;
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 300;
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
-        }
-        
-        .header p {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            letter-spacing: 2px;
-        }
-        
-        .stats {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            display: flex;
-            gap: 40px;
-        }
-        
-        .stat-item {
-            color: #fff;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #00d4ff;
-            text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
-        }
-        
-        .stat-label {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 5px;
-        }
-        
-        .legend {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.85rem;
-        }
-        
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        .ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        .header { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center; color: #fff; }
+        .header h1 { font-size: 2.5rem; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; background: linear-gradient(90deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 30px rgba(0, 212, 255, 0.5); }
+        .header p { margin-top: 10px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); letter-spacing: 2px; }
+        .stats { position: absolute; bottom: 40px; left: 40px; display: flex; gap: 40px; flex-wrap: wrap; }
+        .stat-item { color: #fff; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #00d4ff; text-shadow: 0 0 20px rgba(0, 212, 255, 0.8); }
+        .stat-label { font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+        .legend { position: absolute; bottom: 40px; right: 40px; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); padding: 20px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; }
+        .legend-item:last-child { margin-bottom: 0; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse 2s infinite; }
         .legend-dot.active { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
         .legend-dot.data { background: #00d4ff; box-shadow: 0 0 10px #00d4ff; }
         .legend-dot.alert { background: #ff3366; box-shadow: 0 0 10px #ff3366; }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-        
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00d4ff;
-            font-size: 1.2rem;
-            letter-spacing: 3px;
-            animation: blink 1.5s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        .tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            color: #fff;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            font-size: 0.85rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 100;
-            max-width: 250px;
-        }
-        
-        .tooltip.show {
-            opacity: 1;
-        }
-        
-        .tooltip-title {
-            color: #00d4ff;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .tooltip-info {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00d4ff; font-size: 1.2rem; letter-spacing: 3px; animation: blink 1.5s infinite; z-index: 20; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .tooltip { position: absolute; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); color: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(0, 212, 255, 0.3); font-size: 0.85rem; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; z-index: 100; max-width: 280px; }
+        .tooltip.show { opacity: 1; }
+        .tooltip-title { color: #00d4ff; font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
+        .tooltip-info { color: rgba(255, 255, 255, 0.75); font-size: 0.8rem; line-height: 1.35; }
+        @media (max-width: 768px) { .header h1 { font-size: 1.6rem; letter-spacing: 4px; } .header p { font-size: 0.75rem; } .stats { left: 16px; bottom: 16px; gap: 18px; } .stat-value { font-size: 1.3rem; } .legend { right: 16px; bottom: 16px; padding: 12px; } }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
     <div class="loading" id="loading">正在加载地球...</div>
-    
     <div class="ui-overlay">
         <div class="header">
             <h1>Earth Pulse</h1>
             <p>全球实时活动监测系统</p>
         </div>
-        
         <div class="stats">
             <div class="stat-item">
                 <div class="stat-value" id="active-users">0</div>
@@ -195,28 +55,16 @@
                 <div class="stat-label">实时连接</div>
             </div>
         </div>
-        
         <div class="legend">
-            <div class="legend-item">
-                <div class="legend-dot active"></div>
-                <span>活跃用户</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot data"></div>
-                <span>数据传输</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot alert"></div>
-                <span>异常活动</span>
-            </div>
+            <div class="legend-item"><div class="legend-dot active"></div><span>活跃用户</span></div>
+            <div class="legend-item"><div class="legend-dot data"></div><span>数据传输</span></div>
+            <div class="legend-item"><div class="legend-dot alert"></div><span>异常活动</span></div>
         </div>
     </div>
-    
     <div class="tooltip" id="tooltip">
         <div class="tooltip-title" id="tooltip-title"></div>
         <div class="tooltip-info" id="tooltip-info"></div>
     </div>
-
     <script type="importmap">
     {
         "imports": {
@@ -225,34 +73,35 @@
         }
     }
     </script>
-
     <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import * as THREE from "three";
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-        // 场景设置
+        const CONFIG = {
+            earthRadius: 1,
+            maxMarkers: 50,
+            maxConnections: 20,
+            addActivityIntervalMs: 2000,
+            addConnectionIntervalMs: 3000,
+            statsUpdateIntervalMs: 1000,
+            hoverCheckIntervalMs: 80,
+            starCount: 3000,
+            autoRotateSpeed: 0.5,
+            isMobile: window.innerWidth < 900,
+        };
+        const TEX_SIZE = CONFIG.isMobile ? { w: 1024, h: 512 } : { w: 2048, h: 1024 };
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
-        
-        const camera = new THREE.PerspectiveCamera(
-            45, 
-            window.innerWidth / window.innerHeight, 
-            0.1, 
-            1000
-        );
-        camera.position.z = 3.5;
-        
-        const renderer = new THREE.WebGLRenderer({ 
-            antialias: true, 
-            alpha: true 
-        });
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 3.5);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance", });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        document.getElementById("canvas-container").appendChild(renderer.domElement);
 
-        // 控制器
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
@@ -260,366 +109,219 @@
         controls.minDistance = 1.5;
         controls.maxDistance = 10;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
+        controls.autoRotateSpeed = CONFIG.autoRotateSpeed;
+        controls.addEventListener("start", () => { controls.autoRotate = false; });
+        controls.addEventListener("end", () => { controls.autoRotate = true; });
 
-        // 创建地球纹理（使用 Canvas 生成）
         function createEarthTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            
-            // 海洋背景
+            const canvas = document.createElement("canvas");
+            canvas.width = TEX_SIZE.w;
+            canvas.height = TEX_SIZE.h;
+            const ctx = canvas.getContext("2d");
             const oceanGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            oceanGradient.addColorStop(0, '#001a33');
-            oceanGradient.addColorStop(0.5, '#003366');
-            oceanGradient.addColorStop(1, '#001a33');
+            oceanGradient.addColorStop(0, "#001a33");
+            oceanGradient.addColorStop(0.5, "#003366");
+            oceanGradient.addColorStop(1, "#001a33");
             ctx.fillStyle = oceanGradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // 添加网格线（经纬度）
-            ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+            ctx.strokeStyle = "rgba(0, 212, 255, 0.15)";
             ctx.lineWidth = 1;
-            
-            // 经线
-            for (let i = 0; i <= 36; i++) {
-                const x = (i / 36) * canvas.width;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            
-            // 纬线
-            for (let i = 0; i <= 18; i++) {
-                const y = (i / 18) * canvas.height;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-            
-            // 绘制简化的大陆轮廓（点阵风格）
-            ctx.fillStyle = 'rgba(0, 150, 100, 0.6)';
-            const continents = [
-                {x: 0.15, y: 0.25, w: 0.2, h: 0.25},
-                {x: 0.22, y: 0.55, w: 0.12, h: 0.25},
-                {x: 0.48, y: 0.22, w: 0.12, h: 0.15},
-                {x: 0.5, y: 0.38, w: 0.15, h: 0.25},
-                {x: 0.6, y: 0.2, w: 0.25, h: 0.3},
-                {x: 0.75, y: 0.65, w: 0.1, h: 0.12},
-            ];
-            
-            continents.forEach(c => {
-                const cx = c.x * canvas.width;
-                const cy = c.y * canvas.height;
-                const cw = c.w * canvas.width;
-                const ch = c.h * canvas.height;
-                
-                for (let i = 0; i < 150; i++) {
-                    const px = cx + Math.random() * cw;
-                    const py = cy + Math.random() * ch;
-                    const size = 2 + Math.random() * 4;
-                    ctx.beginPath();
-                    ctx.arc(px, py, size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
+            for (let i = 0; i <= 36; i++) { const x = (i / 36) * canvas.width; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+            for (let i = 0; i <= 18; i++) { const y = (i / 18) * canvas.height; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+            ctx.fillStyle = "rgba(0, 150, 100, 0.6)";
+            const continents = [{ x: 0.15, y: 0.25, w: 0.2, h: 0.25 },{ x: 0.22, y: 0.55, w: 0.12, h: 0.25 },{ x: 0.48, y: 0.22, w: 0.12, h: 0.15 },{ x: 0.5, y: 0.38, w: 0.15, h: 0.25 },{ x: 0.6, y: 0.2, w: 0.25, h: 0.3 },{ x: 0.75, y: 0.65, w: 0.1, h: 0.12 }];
+            continents.forEach((c) => {
+                const cx = c.x * canvas.width, cy = c.y * canvas.height, cw = c.w * canvas.width, ch = c.h * canvas.height;
+                const pointCount = CONFIG.isMobile ? 90 : 150;
+                for (let i = 0; i < pointCount; i++) { const px = cx + Math.random() * cw, py = cy + Math.random() * ch, size = 2 + Math.random() * 4; ctx.beginPath(); ctx.arc(px, py, size, 0, Math.PI * 2); ctx.fill(); }
             });
-            
-            return new THREE.CanvasTexture(canvas);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
         }
 
-        // 创建夜晚灯光纹理
         function createNightTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = '#000000';
+            const canvas = document.createElement("canvas");
+            canvas.width = TEX_SIZE.w;
+            canvas.height = TEX_SIZE.h;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            const cities = [
-                {region: [0.1, 0.2, 0.3, 0.4], count: 80},
-                {region: [0.2, 0.5, 0.35, 0.8], count: 60},
-                {region: [0.45, 0.15, 0.6, 0.35], count: 70},
-                {region: [0.48, 0.35, 0.65, 0.6], count: 50},
-                {region: [0.6, 0.15, 0.9, 0.45], count: 150},
-                {region: [0.72, 0.6, 0.88, 0.8], count: 40},
-            ];
-            
-            cities.forEach(({region, count}) => {
-                for (let i = 0; i < count; i++) {
+            const cities = [{ region: [0.1, 0.2, 0.3, 0.4], count: 80 },{ region: [0.2, 0.5, 0.35, 0.8], count: 60 },{ region: [0.45, 0.15, 0.6, 0.35], count: 70 },{ region: [0.48, 0.35, 0.65, 0.6], count: 50 },{ region: [0.6, 0.15, 0.9, 0.45], count: 150 },{ region: [0.72, 0.6, 0.88, 0.8], count: 40 }];
+            cities.forEach(({ region, count }) => {
+                const c = CONFIG.isMobile ? Math.floor(count * 0.7) : count;
+                for (let i = 0; i < c; i++) {
                     const x = (region[0] + Math.random() * (region[2] - region[0])) * canvas.width;
                     const y = (region[1] + Math.random() * (region[3] - region[1])) * canvas.height;
-                    const brightness = 0.3 + Math.random() * 0.7;
-                    const size = 1 + Math.random() * 3;
-                    
+                    const brightness = 0.3 + Math.random() * 0.7, size = 1 + Math.random() * 3;
                     const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
                     gradient.addColorStop(0, `rgba(255, 220, 100, ${brightness})`);
                     gradient.addColorStop(0.5, `rgba(255, 180, 50, ${brightness * 0.5})`);
-                    gradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
-                    
+                    gradient.addColorStop(1, "rgba(255, 140, 0, 0)");
                     ctx.fillStyle = gradient;
                     ctx.beginPath();
                     ctx.arc(x, y, size * 3, 0, Math.PI * 2);
                     ctx.fill();
                 }
             });
-            
             return new THREE.CanvasTexture(canvas);
         }
 
         const earthGroup = new THREE.Group();
         scene.add(earthGroup);
-
-        const earthGeometry = new THREE.SphereGeometry(1, 128, 128);
-        const earthMaterial = new THREE.MeshPhongMaterial({
-            map: createEarthTexture(),
-            emissiveMap: createNightTexture(),
-            emissive: new THREE.Color(0xffaa44),
-            emissiveIntensity: 0.8,
-            specular: new THREE.Color(0x333333),
-            shininess: 15
-        });
+        const earthGeometry = new THREE.SphereGeometry(CONFIG.earthRadius, CONFIG.isMobile ? 48 : 64, CONFIG.isMobile ? 48 : 64);
+        const earthMaterial = new THREE.MeshPhongMaterial({ map: createEarthTexture(), emissiveMap: createNightTexture(), emissive: new THREE.Color(0xffaa44), emissiveIntensity: 0.8, specular: new THREE.Color(0x333333), shininess: 15 });
         const earth = new THREE.Mesh(earthGeometry, earthMaterial);
         earthGroup.add(earth);
 
-        // 大气层光晕
-        const atmosphereGeometry = new THREE.SphereGeometry(1.08, 64, 64);
+        const atmosphereGeometry = new THREE.SphereGeometry(1.08, CONFIG.isMobile ? 32 : 48, CONFIG.isMobile ? 32 : 48);
         const atmosphereMaterial = new THREE.ShaderMaterial({
-            transparent: true,
-            side: THREE.BackSide,
-            uniforms: {
-                c: { value: 0.6 },
-                p: { value: 4.0 },
-                glowColor: { value: new THREE.Color(0x00d4ff) },
-                viewVector: { value: camera.position }
-            },
-            vertexShader: `
-                uniform vec3 viewVector;
-                varying float intensity;
-                void main() {
-                    vec3 vNormal = normalize(normalMatrix * normal);
-                    vec3 vNormel = normalize(normalMatrix * viewVector);
-                    intensity = pow(0.65 - dot(vNormal, vNormel), 4.0);
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 glowColor;
-                varying float intensity;
-                void main() {
-                    vec3 glow = glowColor * intensity;
-                    gl_FragColor = vec4(glow, intensity);
-                }
-            `,
-            blending: THREE.AdditiveBlending
+            transparent: true, side: THREE.BackSide,
+            uniforms: { glowColor: { value: new THREE.Color(0x00d4ff) }, viewVector: { value: camera.position.clone() } },
+            vertexShader: `uniform vec3 viewVector; varying float intensity; void main() { vec3 vNormal = normalize(normalMatrix * normal); vec3 vNormel = normalize(normalMatrix * viewVector); intensity = pow(0.65 - dot(vNormal, vNormel), 4.0); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `uniform vec3 glowColor; varying float intensity; void main() { vec3 glow = glowColor * intensity; gl_FragColor = vec4(glow, intensity); }`,
+            blending: THREE.AdditiveBlending, depthWrite: false,
         });
         const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
         scene.add(atmosphere);
 
-        // 内部发光层
-        const innerGlowGeometry = new THREE.SphereGeometry(1.03, 64, 64);
-        const innerGlowMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00d4ff,
-            transparent: true,
-            opacity: 0.1,
-            side: THREE.BackSide
-        });
+        const innerGlowGeometry = new THREE.SphereGeometry(1.03, CONFIG.isMobile ? 32 : 48, CONFIG.isMobile ? 32 : 48);
+        const innerGlowMaterial = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.1, side: THREE.BackSide, depthWrite: false });
         const innerGlow = new THREE.Mesh(innerGlowGeometry, innerGlowMaterial);
         earthGroup.add(innerGlow);
 
-        // 星空背景
         function createStarfield() {
-            const geometry = new THREE.BufferGeometry();
-            const count = 3000;
-            const positions = new Float32Array(count * 3);
-            const colors = new Float32Array(count * 3);
-            const sizes = new Float32Array(count);
-            
+            const geometry = new THREE.BufferGeometry(), count = CONFIG.starCount;
+            const positions = new Float32Array(count * 3), colors = new Float32Array(count * 3);
             for (let i = 0; i < count; i++) {
-                const i3 = i * 3;
-                const radius = 15 + Math.random() * 35;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                
+                const i3 = i * 3, radius = 15 + Math.random() * 35, theta = Math.random() * Math.PI * 2, phi = Math.acos(2 * Math.random() - 1);
                 positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
                 positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
                 positions[i3 + 2] = radius * Math.cos(phi);
-                
                 const colorType = Math.random();
-                if (colorType > 0.9) {
-                    colors[i3] = 0.8; colors[i3 + 1] = 0.8; colors[i3 + 2] = 1;
-                } else if (colorType > 0.7) {
-                    colors[i3] = 1; colors[i3 + 1] = 0.9; colors[i3 + 2] = 0.7;
-                } else {
-                    colors[i3] = 1; colors[i3 + 1] = 1; colors[i3 + 2] = 1;
-                }
-                
-                sizes[i] = Math.random() * 2;
+                if (colorType > 0.9) { colors[i3] = 0.8; colors[i3 + 1] = 0.8; colors[i3 + 2] = 1.0; }
+                else if (colorType > 0.7) { colors[i3] = 1.0; colors[i3 + 1] = 0.9; colors[i3 + 2] = 0.7; }
+                else { colors[i3] = 1.0; colors[i3 + 1] = 1.0; colors[i3 + 2] = 1.0; }
             }
-            
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-            
-            const material = new THREE.PointsMaterial({
-                size: 0.05,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8,
-                sizeAttenuation: true
-            });
-            
+            geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+            const material = new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, opacity: 0.8, sizeAttenuation: true, depthWrite: false });
             return new THREE.Points(geometry, material);
         }
-        
         const stars = createStarfield();
         scene.add(stars);
 
-        const activityPoints = [];
-        const connections = [];
-        const markers = [];
+        const markers = [], connections = [], markerInteractiveMeshes = [];
 
         function latLonToVector3(lat, lon, radius) {
-            const phi = (90 - lat) * (Math.PI / 180);
-            const theta = (lon + 180) * (Math.PI / 180);
-            
-            const x = -(radius * Math.sin(phi) * Math.cos(theta));
-            const z = radius * Math.sin(phi) * Math.sin(theta);
-            const y = radius * Math.cos(phi);
-            
-            return new THREE.Vector3(x, y, z);
+            const phi = (90 - lat) * (Math.PI / 180), theta = (lon + 180) * (Math.PI / 180);
+            return new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta));
         }
 
-        function createActivityMarker(lat, lon, type = 'active') {
+        function disposeObject3D(obj) {
+            obj.traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach((m) => m && m.dispose && m.dispose());
+                    else if (child.material.dispose) child.material.dispose();
+                }
+            });
+        }
+
+        function createActivityMarker(lat, lon, type = "active") {
             const position = latLonToVector3(lat, lon, 1.02);
-            
-            const colors = {
-                active: 0x00ff88,
-                data: 0x00d4ff,
-                alert: 0xff3366
-            };
-            
+            const colorMap = { active: 0x00ff88, data: 0x00d4ff, alert: 0xff3366 };
+            const color = colorMap[type] ?? colorMap.active;
             const markerGroup = new THREE.Group();
             markerGroup.position.copy(position);
             markerGroup.lookAt(new THREE.Vector3(0, 0, 0));
-            
-            const coreGeometry = new THREE.SphereGeometry(0.015, 16, 16);
-            const coreMaterial = new THREE.MeshBasicMaterial({
-                color: colors[type]
-            });
+
+            const coreGeometry = new THREE.SphereGeometry(0.015, 12, 12);
+            const coreMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
             const core = new THREE.Mesh(coreGeometry, coreMaterial);
             markerGroup.add(core);
-            
-            const ringGeometry = new THREE.RingGeometry(0.02, 0.025, 32);
-            const ringMaterial = new THREE.MeshBasicMaterial({
-                color: colors[type],
-                transparent: true,
-                opacity: 0.6,
-                side: THREE.DoubleSide
-            });
+
+            const ringGeometry = new THREE.RingGeometry(0.02, 0.025, 24);
+            const ringMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
             const ring = new THREE.Mesh(ringGeometry, ringMaterial);
             ring.lookAt(new THREE.Vector3(0, 0, 0));
             markerGroup.add(ring);
-            
-            const beamGeometry = new THREE.CylinderGeometry(0.005, 0.005, 0.15, 8);
-            const beamMaterial = new THREE.MeshBasicMaterial({
-                color: colors[type],
-                transparent: true,
-                opacity: 0.4
-            });
+
+            let ring2 = null;
+            if (type === "alert") {
+                const ring2Geometry = new THREE.RingGeometry(0.028, 0.032, 24);
+                const ring2Material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
+                ring2 = new THREE.Mesh(ring2Geometry, ring2Material);
+                ring2.lookAt(new THREE.Vector3(0, 0, 0));
+                markerGroup.add(ring2);
+            }
+
+            const beamGeometry = new THREE.CylinderGeometry(type === "alert" ? 0.007 : 0.005, type === "alert" ? 0.007 : 0.005, type === "alert" ? 0.18 : 0.15, 8);
+            const beamMaterial = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, depthWrite: false });
             const beam = new THREE.Mesh(beamGeometry, beamMaterial);
-            beam.position.z = 0.075;
+            beam.position.z = (type === "alert" ? 0.18 : 0.15) / 2;
             beam.rotation.x = Math.PI / 2;
             markerGroup.add(beam);
-            
-            markerGroup.userData = {
-                type: type,
-                ring: ring,
-                beam: beam,
-                core: core,
-                baseScale: 1,
-                lat: lat,
-                lon: lon,
-                createdAt: Date.now()
-            };
-            
+
+            const hitGeometry = new THREE.SphereGeometry(0.04, 8, 8);
+            const hitMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+            const hitMesh = new THREE.Mesh(hitGeometry, hitMaterial);
+            markerGroup.add(hitMesh);
+
+            markerGroup.userData = { type, lat, lon, ring, ring2, beam, core, hitMesh, createdAt: performance.now() };
+            hitMesh.userData.markerRoot = markerGroup;
             earthGroup.add(markerGroup);
             markers.push(markerGroup);
-            
+            markerInteractiveMeshes.push(hitMesh);
             return markerGroup;
         }
 
         function createConnection(startLat, startLon, endLat, endLon) {
-            const start = latLonToVector3(startLat, startLon, 1.02);
-            const end = latLonToVector3(endLat, endLon, 1.02);
-            
+            const start = latLonToVector3(startLat, startLon, 1.02), end = latLonToVector3(endLat, endLon, 1.02);
             const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-            const distance = start.distanceTo(end);
-            const height = 1 + distance * 0.3;
+            const distance = start.distanceTo(end), height = 1 + distance * 0.3;
             mid.normalize().multiplyScalar(height);
-            
             const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
             const points = curve.getPoints(50);
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            
-            const material = new THREE.LineBasicMaterial({
-                color: 0x00d4ff,
-                transparent: true,
-                opacity: 0.6
-            });
-            
+            const material = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.6, depthWrite: false });
             const line = new THREE.Line(geometry, material);
             earthGroup.add(line);
-            
             const particleGeometry = new THREE.SphereGeometry(0.008, 8, 8);
-            const particleMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ffff,
-                transparent: true,
-                opacity: 1
-            });
+            const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 1, depthWrite: false });
             const particle = new THREE.Mesh(particleGeometry, particleMaterial);
             earthGroup.add(particle);
-            
-            const connection = {
-                line: line,
-                particle: particle,
-                curve: curve,
-                progress: 0,
-                speed: 0.01 + Math.random() * 0.02
-            };
-            
+            const connection = { line, particle, curve, progress: Math.random(), speed: 0.01 + Math.random() * 0.02 };
             connections.push(connection);
             return connection;
         }
 
+        function removeOldestMarker() {
+            const old = markers.shift();
+            if (!old) return;
+            const hitMesh = old.userData?.hitMesh;
+            if (hitMesh) { const idx = markerInteractiveMeshes.indexOf(hitMesh); if (idx >= 0) markerInteractiveMeshes.splice(idx, 1); }
+            if (hoveredMarker === old) { hoveredMarker = null; hideTooltip(); }
+            earthGroup.remove(old);
+            disposeObject3D(old);
+        }
+
+        function removeOldestConnection() {
+            const old = connections.shift();
+            if (!old) return;
+            earthGroup.remove(old.line, old.particle);
+            old.line.geometry.dispose();
+            old.line.material.dispose();
+            old.particle.geometry.dispose();
+            old.particle.material.dispose();
+        }
+
         const majorCities = [
-            {lat: 40.7128, lon: -74.0060, name: 'New York', region: 'NA'},
-            {lat: 34.0522, lon: -118.2437, name: 'Los Angeles', region: 'NA'},
-            {lat: 51.5074, lon: -0.1278, name: 'London', region: 'EU'},
-            {lat: 48.8566, lon: 2.3522, name: 'Paris', region: 'EU'},
-            {lat: 52.5200, lon: 13.4050, name: 'Berlin', region: 'EU'},
-            {lat: 55.7558, lon: 37.6173, name: 'Moscow', region: 'EU'},
-            {lat: 35.6762, lon: 139.6503, name: 'Tokyo', region: 'AS'},
-            {lat: 39.9042, lon: 116.4074, name: 'Beijing', region: 'AS'},
-            {lat: 31.2304, lon: 121.4737, name: 'Shanghai', region: 'AS'},
-            {lat: 1.3521, lon: 103.8198, name: 'Singapore', region: 'AS'},
-            {lat: 19.0760, lon: 72.8777, name: 'Mumbai', region: 'AS'},
-            {lat: 37.5665, lon: 126.9780, name: 'Seoul', region: 'AS'},
-            {lat: -33.8688, lon: 151.2093, name: 'Sydney', region: 'AU'},
-            {lat: -23.5505, lon: -46.6333, name: 'São Paulo', region: 'SA'},
-            {lat: 19.4326, lon: -99.1332, name: 'Mexico City', region: 'NA'},
-            {lat: -1.2921, lon: 36.8219, name: 'Nairobi', region: 'AF'},
-            {lat: -26.2041, lon: 28.0473, name: 'Johannesburg', region: 'AF'},
-            {lat: 25.2048, lon: 55.2708, name: 'Dubai', region: 'AS'},
-            {lat: 28.6139, lon: 77.2090, name: 'New Delhi', region: 'AS'},
-            {lat: 41.0082, lon: 28.9784, name: 'Istanbul', region: 'EU'}
+            { lat: 40.7128, lon: -74.0060, name: "New York" },{ lat: 34.0522, lon: -118.2437, name: "Los Angeles" },{ lat: 51.5074, lon: -0.1278, name: "London" },{ lat: 48.8566, lon: 2.3522, name: "Paris" },{ lat: 52.5200, lon: 13.4050, name: "Berlin" },{ lat: 55.7558, lon: 37.6173, name: "Moscow" },{ lat: 35.6762, lon: 139.6503, name: "Tokyo" },{ lat: 39.9042, lon: 116.4074, name: "Beijing" },{ lat: 31.2304, lon: 121.4737, name: "Shanghai" },{ lat: 1.3521, lon: 103.8198, name: "Singapore" },{ lat: 19.0760, lon: 72.8777, name: "Mumbai" },{ lat: 37.5665, lon: 126.9780, name: "Seoul" },{ lat: -33.8688, lon: 151.2093, name: "Sydney" },{ lat: -23.5505, lon: -46.6333, name: "São Paulo" },{ lat: 19.4326, lon: -99.1332, name: "Mexico City" },{ lat: -1.2921, lon: 36.8219, name: "Nairobi" },{ lat: -26.2041, lon: 28.0473, name: "Johannesburg" },{ lat: 25.2048, lon: 55.2708, name: "Dubai" },{ lat: 28.6139, lon: 77.2090, name: "New Delhi" },{ lat: 41.0082, lon: 28.9784, name: "Istanbul" }
         ];
 
-        majorCities.forEach(city => {
-            const types = ['active', 'active', 'data', 'data', 'alert'];
+        majorCities.forEach((city) => {
+            const types = ["active", "active", "data", "data", "alert"];
             const type = types[Math.floor(Math.random() * types.length)];
             createActivityMarker(city.lat, city.lon, type);
         });
@@ -627,48 +329,30 @@
         for (let i = 0; i < 15; i++) {
             const start = majorCities[Math.floor(Math.random() * majorCities.length)];
             const end = majorCities[Math.floor(Math.random() * majorCities.length)];
-            if (start !== end) {
-                createConnection(start.lat, start.lon, end.lat, end.lon);
-            }
+            if (start !== end) createConnection(start.lat, start.lon, end.lat, end.lon);
         }
 
         function addRandomActivity() {
-            const lat = (Math.random() - 0.5) * 160;
-            const lon = (Math.random() - 0.5) * 360;
-            const types = ['active', 'data', 'data', 'alert'];
+            const lat = (Math.random() - 0.5) * 160, lon = (Math.random() - 0.5) * 360;
+            const types = ["active", "data", "data", "alert"];
             const type = types[Math.floor(Math.random() * types.length)];
             createActivityMarker(lat, lon, type);
-            
-            if (markers.length > 50) {
-                const old = markers.shift();
-                earthGroup.remove(old);
-            }
+            while (markers.length > CONFIG.maxMarkers) removeOldestMarker();
         }
 
         function addRandomConnection() {
             if (markers.length >= 2) {
                 const start = markers[Math.floor(Math.random() * markers.length)];
                 const end = markers[Math.floor(Math.random() * markers.length)];
-                if (start !== end) {
-                    createConnection(start.userData.lat, start.userData.lon, 
-                                   end.userData.lat, end.userData.lon);
-                }
+                if (start && end && start !== end) createConnection(start.userData.lat, start.userData.lon, end.userData.lat, end.userData.lon);
             }
-            
-            if (connections.length > 20) {
-                const old = connections.shift();
-                earthGroup.remove(old.line);
-                earthGroup.remove(old.particle);
-            }
+            while (connections.length > CONFIG.maxConnections) removeOldestConnection();
         }
 
-        const ambientLight = new THREE.AmbientLight(0x333333, 2);
-        scene.add(ambientLight);
-
+        scene.add(new THREE.AmbientLight(0x333333, 2));
         const sunLight = new THREE.DirectionalLight(0xffffff, 2);
         sunLight.position.set(5, 3, 5);
         scene.add(sunLight);
-
         const rimLight = new THREE.DirectionalLight(0x00d4ff, 0.5);
         rimLight.position.set(-5, 0, -5);
         scene.add(rimLight);
@@ -676,120 +360,144 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         let hoveredMarker = null;
+        let hoverDirty = true;
+        let lastHoverCheckTs = 0;
+        const tooltip = document.getElementById("tooltip");
+        const tooltipTitleEl = document.getElementById("tooltip-title");
+        const tooltipInfoEl = document.getElementById("tooltip-info");
+
+        function showTooltip(marker) {
+            const typeNames = { active: "活跃用户", data: "数据传输", alert: "异常活动" };
+            tooltipTitleEl.textContent = `${typeNames[marker.userData.type]} - ${marker.userData.lat.toFixed(2)}, ${marker.userData.lon.toFixed(2)}`;
+            tooltipInfoEl.textContent = `实时监测中 | 信号强度: ${(Math.random() * 100).toFixed(0)}%`;
+            tooltip.classList.add("show");
+            document.body.style.cursor = "pointer";
+        }
+
+        function hideTooltip() { tooltip.classList.remove("show"); document.body.style.cursor = "default"; }
 
         function onMouseMove(event) {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.left = event.clientX + 15 + 'px';
-            tooltip.style.top = event.clientY + 15 + 'px';
+tooltip.style.left = `${event.clientX + 15}px`; tooltip.style.top = `${event.clientY + 15}px`;
+            hoverDirty = true;
         }
+        window.addEventListener("mousemove", onMouseMove, { passive: true });
 
-        window.addEventListener('mousemove', onMouseMove);
-
-        function checkHover() {
+        function checkHover(now) {
+            if (!hoverDirty && now - lastHoverCheckTs < CONFIG.hoverCheckIntervalMs) return;
+            if (now - lastHoverCheckTs < CONFIG.hoverCheckIntervalMs) return;
+            lastHoverCheckTs = now;
+            hoverDirty = false;
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(markers, true);
-            
-            const tooltip = document.getElementById('tooltip');
-            const titleEl = document.getElementById('tooltip-title');
-            const infoEl = document.getElementById('tooltip-info');
-            
+            const intersects = raycaster.intersectObjects(markerInteractiveMeshes, false);
             if (intersects.length > 0) {
-                const marker = intersects[0].object.parent;
-                if (marker !== hoveredMarker) {
-                    hoveredMarker = marker;
-                    
-                    const typeNames = {
-                        active: '活跃用户',
-                        data: '数据传输',
-                        alert: '异常活动'
-                    };
-                    
-                    titleEl.textContent = `${typeNames[marker.userData.type]} - ${marker.userData.lat.toFixed(2)}, ${marker.userData.lon.toFixed(2)}`;
-                    infoEl.textContent = `实时监测中 | 信号强度: ${(Math.random() * 100).toFixed(0)}%`;
-                    tooltip.classList.add('show');
-                    
-                    document.body.style.cursor = 'pointer';
-                }
-            } else {
-                if (hoveredMarker) {
-                    hoveredMarker = null;
-                    tooltip.classList.remove('show');
-                    document.body.style.cursor = 'default';
-                }
-            }
+                const marker = intersects[0].object.userData?.markerRoot ?? null;
+                if (marker && marker !== hoveredMarker) { hoveredMarker = marker; showTooltip(marker); }
+            } else if (hoveredMarker) { hoveredMarker = null; hideTooltip(); }
         }
 
-        let stats = {
-            users: 125847,
-            nodes: markers.length,
-            connections: connections.length
-        };
+        const stats = { users: 125847, nodes: markers.length, connections: connections.length };
 
         function updateStats() {
             stats.users += Math.floor(Math.random() * 50) - 20;
+            stats.users = Math.max(1000, stats.users);
             stats.nodes = markers.length;
             stats.connections = connections.length;
-            
-            document.getElementById('active-users').textContent = stats.users.toLocaleString();
-            document.getElementById('data-points').textContent = stats.nodes;
-            document.getElementById('connections').textContent = stats.connections;
+            document.getElementById("active-users").textContent = stats.users.toLocaleString();
+            document.getElementById("data-points").textContent = String(stats.nodes);
+            document.getElementById("connections").textContent = String(stats.connections);
+        }
+        updateStats();
+
+        let activityTimer = null, connectionTimer = null, statsTimer = null;
+        let appPaused = false;
+
+        function startIntervals() {
+            stopIntervals();
+            statsTimer = setInterval(updateStats, CONFIG.statsUpdateIntervalMs);
+            activityTimer = setInterval(() => { if (!appPaused) addRandomActivity(); }, CONFIG.addActivityIntervalMs);
+            connectionTimer = setInterval(() => { if (!appPaused) addRandomConnection(); }, CONFIG.addConnectionIntervalMs);
         }
 
-        setInterval(updateStats, 1000);
-        setInterval(addRandomActivity, 2000);
-        setInterval(addRandomConnection, 3000);
+        function stopIntervals() {
+            if (statsTimer) clearInterval(statsTimer);
+            if (activityTimer) clearInterval(activityTimer);
+            if (connectionTimer) clearInterval(connectionTimer);
+            statsTimer = activityTimer = connectionTimer = null;
+        }
 
-        window.addEventListener('resize', () => {
+        document.addEventListener("visibilitychange", () => {
+            appPaused = document.hidden;
+            if (appPaused) hideTooltip();
+            else hoverDirty = true;
+        });
+        startIntervals();
+
+        window.addEventListener("resize", () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            hoverDirty = true;
         });
 
-        document.getElementById('loading').style.display = 'none';
+        const clock = new THREE.Clock();
+        const tempVec = new THREE.Vector3();
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            const time = Date.now() * 0.001;
-            
+            if (appPaused) return;
+            const elapsed = clock.getElapsedTime();
+            const now = performance.now();
             controls.update();
-            
-            atmosphereMaterial.uniforms.viewVector.value = camera.position;
-            
+            atmosphereMaterial.uniforms.viewVector.value.copy(camera.position);
             stars.rotation.y += 0.0002;
-            
-            markers.forEach((marker, i) => {
+
+            for (let i = 0; i < markers.length; i++) {
+                const marker = markers[i];
                 const data = marker.userData;
-                const age = (Date.now() - data.createdAt) / 1000;
-                
-                const pulseScale = 1 + Math.sin(time * 3 + i) * 0.3;
+                marker.lookAt(0, 0, 0);
+                const freq = data.type === "alert" ? 6 : data.type === "data" ? 4 : 3;
+                const amp = data.type === "alert" ? 0.45 : data.type === "data" ? 0.28 : 0.22;
+                const pulseScale = 1 + Math.sin(elapsed * freq + i * 0.7) * amp;
                 data.ring.scale.set(pulseScale, pulseScale, pulseScale);
-                data.ring.material.opacity = 0.6 - (pulseScale - 1) * 0.3;
-                
-                data.beam.material.opacity = 0.3 + Math.sin(time * 5 + i * 0.5) * 0.2;
-                
-                data.core.material.opacity = 0.8 + Math.sin(time * 4 + i) * 0.2;
-            });
-            
-            connections.forEach(conn => {
+                data.ring.material.opacity = 0.55 - (pulseScale - 1) * 0.25;
+                if (data.ring2) {
+                    const pulse2 = 1 + Math.sin(elapsed * (freq + 1.5) + i) * (amp * 0.7);
+                    data.ring2.scale.set(pulse2, pulse2, pulse2);
+                    data.ring2.material.opacity = 0.25 + Math.sin(elapsed * 8 + i) * 0.1;
+                }
+                data.beam.material.opacity = (data.type === "alert" ? 0.45 : 0.3) + Math.sin(elapsed * (freq + 2) + i * 0.5) * 0.2;
+                data.core.material.opacity = 0.75 + Math.sin(elapsed * (freq + 1) + i) * 0.2;
+            }
+
+            for (let i = 0; i < connections.length; i++) {
+                const conn = connections[i];
                 conn.progress += conn.speed;
                 if (conn.progress > 1) conn.progress = 0;
-                
                 const point = conn.curve.getPoint(conn.progress);
                 conn.particle.position.copy(point);
-                
-                conn.particle.material.opacity = Math.sin(conn.progress * Math.PI);
-            });
-            
-            checkHover();
-            
+                conn.particle.material.opacity = Math.max(0.15, Math.sin(conn.progress * Math.PI));
+            }
+
+            checkHover(now);
             renderer.render(scene, camera);
         }
 
+        document.getElementById("loading").style.display = "none";
         animate();
+
+        window.addEventListener("beforeunload", () => {
+            stopIntervals();
+            for (const c of connections) { earthGroup.remove(c.line, c.particle); c.line.geometry.dispose(); c.line.material.dispose(); c.particle.geometry.dispose(); c.particle.material.dispose(); }
+            for (const m of markers) { earthGroup.remove(m); disposeObject3D(m); }
+            earthGeometry.dispose(); earthMaterial.map?.dispose?.(); earthMaterial.emissiveMap?.dispose?.(); earthMaterial.dispose();
+            atmosphereGeometry.dispose(); atmosphereMaterial.dispose();
+            innerGlowGeometry.dispose(); innerGlowMaterial.dispose();
+            stars.geometry.dispose(); stars.material.dispose();
+            renderer.dispose();
+        });
     </script>
 </body>
 </html>
